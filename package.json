@@ -1,0 +1,13 @@
+{
+  "name": "therius-plugin-prestashop",
+  "version": "1.0.0",
+  "description": "The Therius Payment Plugin integrates the Therius Payment Orchestration Platform into PrestaShop. It replaces standard single-gateway integrations with our unified Checkout Widget, supporting cards and local alternative payment methods with dynamic smart routing and centralized reconciliation.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

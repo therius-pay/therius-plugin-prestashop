@@ -1,0 +1,9 @@
+/* therius checkout css */
+#therius-payment-element {
+    margin-bottom: 20px;
+}
+
+.therius-status {
+    color: #4169E1;
+    font-weight: 600;
+}
