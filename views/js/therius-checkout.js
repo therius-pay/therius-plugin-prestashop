@@ -200,6 +200,17 @@ jQuery(document).ready(function($) {
         }, 500);
     }
 
+    // Constructs the SDK's DeclineError when a recoveryAction is present
+    // (activates CheckoutWidget's built-in smart recovery — retry/
+    // switch_method/terminal), falling back to a plain Error otherwise.
+    // Mirrors therius-plugin-shopware's therius-payment.plugin.js.
+    function buildDeclineError(message, recoveryAction) {
+        if (recoveryAction && window.TheriusSDK && window.TheriusSDK.DeclineError) {
+            return new window.TheriusSDK.DeclineError(message, recoveryAction);
+        }
+        return new Error(message);
+    }
+
     function callPreOrderPurchase(method, data, paymentCode) {
         return new Promise(function(resolve, reject) {
             if (!conditionsApproved()) {
@@ -233,16 +244,21 @@ jQuery(document).ready(function($) {
                         submitOrderForm(response.paymentCode || paymentCode);
                     } else {
                         showError(response.error || 'Payment failed');
-                        reject(new Error(response.error || 'Payment failed'));
+                        reject(buildDeclineError(response.error || 'Payment failed', response.recoveryAction));
                     }
                 },
+                // purchase.php's decline branch returns HTTP 400, so a real
+                // decline is routed here by jQuery, never through the
+                // success callback's else-branch above.
                 error: function(xhr) {
                     var msg = 'Payment failed';
+                    var recoveryAction;
                     if (xhr.responseJSON && xhr.responseJSON.error) {
                         msg = xhr.responseJSON.error;
+                        recoveryAction = xhr.responseJSON.recoveryAction;
                     }
                     showError(msg);
-                    reject(new Error(msg));
+                    reject(buildDeclineError(msg, recoveryAction));
                 }
             });
         });

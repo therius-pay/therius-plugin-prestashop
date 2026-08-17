@@ -192,7 +192,17 @@ class TheriusPurchaseModuleFrontController extends ModuleFrontController
             }
             
             http_response_code(400);
-            echo json_encode(['error' => isset($json['error']) ? $json['error'] : (isset($json['refusalCode']['reason']) ? $json['refusalCode']['reason'] : 'Payment declined.')]);
+            echo json_encode([
+                'error' => isset($json['error']) ? $json['error'] : (isset($json['refusalCode']['reason']) ? $json['refusalCode']['reason'] : 'Payment declined.'),
+                // Surfaced so therius-checkout.js can reject with the SDK's
+                // DeclineError (retry/switch_method/terminal) instead of a
+                // plain Error, activating CheckoutWidget's built-in smart
+                // recovery — mirrors therius-plugin-woocommerce's
+                // extract_recovery_action() / therius-plugin-shopware's
+                // declineResponse(). Defaults to 'switch_method', the safest
+                // generic fallback.
+                'recoveryAction' => isset($json['refusalCode']['recoveryAction']) ? $json['refusalCode']['recoveryAction'] : 'switch_method',
+            ]);
             exit;
         }
 
