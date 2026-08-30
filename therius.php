@@ -315,7 +315,6 @@ class Therius extends PaymentModule
         
         $body = [
             'key' => $priv,
-            'orderCode' => $order->reference,
             'amount' => [
                 'value' => $minorUnit,
                 'currency' => $currency->iso_code,
@@ -328,21 +327,45 @@ class Therius extends PaymentModule
             $body['merchantCode'] = $merchantCode;
         }
 
-        // Get payment code from order payments
+        // Therius addresses a payment by its server-issued id in the URL —
+        // POST /v1/payment/{id}/refund. orderCode / paymentCode are not
+        // accepted for this call. The order payment's transaction_id holds the
+        // paymentCode; resolve it to the id via the keyless inquiry endpoint
+        // (which returns both).
+        $paymentCode = '';
         $orderPaymentCollection = $order->getOrderPaymentCollection();
         if ($orderPaymentCollection->count()) {
             $paymentCode = $orderPaymentCollection->getFirst()->transaction_id;
-            if ($paymentCode) {
-                $body['paymentCode'] = $paymentCode;
+        }
+        if (!$paymentCode) {
+            PrestaShopLogger::addLog('Therius: refund for order ' . $order->reference . ' has no stored payment code', 3);
+            return;
+        }
+
+        $paymentId = '';
+        $ich = curl_init($apiBase . '/v1/payment/inquiry/' . urlencode($paymentCode));
+        curl_setopt($ich, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ich, CURLOPT_HTTPHEADER, $isTest ? ['X-Environment: sandbox'] : []);
+        $iresp = curl_exec($ich);
+        $icode = curl_getinfo($ich, CURLINFO_HTTP_CODE);
+        curl_close($ich);
+        if ($icode < 400) {
+            $idata = json_decode($iresp, true);
+            if (!empty($idata['id'])) {
+                $paymentId = $idata['id'];
             }
         }
-        
+        if (!$paymentId) {
+            PrestaShopLogger::addLog('Therius: could not resolve payment id for order ' . $order->reference . ' (payment ' . $paymentCode . ')', 3);
+            return;
+        }
+
         // Keyed on the order slip id (one per distinct refund action) so a
         // retried request for the same slip reuses the key, but two separate
         // refunds of the same amount on the same order don't collide.
         $dedupe = md5($order->id . '|' . $amount . '|' . $orderSlip->id);
 
-        $ch = curl_init($apiBase . '/v1/payment/refund');
+        $ch = curl_init($apiBase . '/v1/payment/' . urlencode($paymentId) . '/refund');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Authorization: Bearer ' . $priv,
