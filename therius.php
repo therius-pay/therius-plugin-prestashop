@@ -314,7 +314,6 @@ class Therius extends PaymentModule
         $exponent = $isZero ? 0 : 2;
         
         $body = [
-            'key' => $priv,
             'amount' => [
                 'value' => $minorUnit,
                 'currency' => $currency->iso_code,

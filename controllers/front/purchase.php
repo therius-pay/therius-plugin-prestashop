@@ -94,8 +94,7 @@ class TheriusPurchaseModuleFrontController extends ModuleFrontController
                 'browserInfo' => [
                     'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
                     'ipAddress' => Tools::getRemoteAddr()
-                ],
-                'key' => $priv
+                ]
             ];
             
             if ($customer->id) {
