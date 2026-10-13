@@ -211,6 +211,22 @@ jQuery(document).ready(function($) {
         return new Error(message);
     }
 
+    // The shopper's browser data as EMV 3DS wants it (the Accept header is the standard document
+    // value: a page cannot read its own). timeZoneOffset is minutes, UTC minus local.
+    function collectBrowserInfo() {
+        var scr = window.screen || {};
+        return {
+            acceptHeader: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            language: navigator.language || '',
+            colorDepth: scr.colorDepth || 24,
+            screenWidth: scr.width || 0,
+            screenHeight: scr.height || 0,
+            timeZoneOffset: new Date().getTimezoneOffset(),
+            javaEnabled: false,
+            javascriptEnabled: true
+        };
+    }
+
     function callPreOrderPurchase(method, data, paymentCode) {
         return new Promise(function(resolve, reject) {
             if (!conditionsApproved()) {
@@ -225,7 +241,8 @@ jQuery(document).ready(function($) {
 
             var payload = Object.assign({}, data, {
                 method: method,
-                payment_code: paymentCode
+                payment_code: paymentCode,
+                browser_info: collectBrowserInfo()
             });
 
             $.ajax({

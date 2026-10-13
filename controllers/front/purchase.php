@@ -5,6 +5,39 @@ if (!defined('_PS_VERSION_')) {
 
 class TheriusPurchaseModuleFrontController extends ModuleFrontController
 {
+    /**
+     * browserInfo for the purchase body: the user agent and IP of this request (the shopper's own
+     * browser), plus the screen/language/time-zone data the checkout JS collected. EMV 3DS run by
+     * the provider itself (Redsys, Nuvei, Adyen embedded) rejects the payment without those
+     * fields. Only the known keys are taken, with their types enforced.
+     */
+    private function buildBrowserInfo($raw)
+    {
+        $info = [
+            'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
+            'ipAddress' => Tools::getRemoteAddr()
+        ];
+        if (!is_array($raw)) {
+            return $info;
+        }
+        foreach (['acceptHeader', 'language'] as $key) {
+            if (isset($raw[$key]) && is_string($raw[$key]) && $raw[$key] !== '') {
+                $info[$key] = $raw[$key];
+            }
+        }
+        foreach (['colorDepth', 'screenWidth', 'screenHeight', 'timeZoneOffset'] as $key) {
+            if (isset($raw[$key]) && is_numeric($raw[$key])) {
+                $info[$key] = (int) $raw[$key];
+            }
+        }
+        foreach (['javaEnabled', 'javascriptEnabled'] as $key) {
+            if (isset($raw[$key])) {
+                $info[$key] = (bool) $raw[$key];
+            }
+        }
+        return $info;
+    }
+
     public function postProcess()
     {
         $action = Tools::getValue('action');
@@ -91,10 +124,7 @@ class TheriusPurchaseModuleFrontController extends ModuleFrontController
                     'email' => $customer->email,
                     'name' => $address->firstname . ' ' . $address->lastname
                 ],
-                'browserInfo' => [
-                    'userAgent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
-                    'ipAddress' => Tools::getRemoteAddr()
-                ]
+                'browserInfo' => $this->buildBrowserInfo($input['browser_info'] ?? null)
             ];
             
             if ($customer->id) {
