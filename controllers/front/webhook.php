@@ -93,7 +93,7 @@ class TheriusWebhookModuleFrontController extends ModuleFrontController
                     $order->setCurrentState((int)Configuration::get('PS_OS_PAYMENT'));
                     break;
                 case 'payment.refused':
-                case 'payment.cancelled':
+                case 'payment.canceled':
                 case 'payment.capture_failed':
                     $order->setCurrentState((int)Configuration::get('PS_OS_ERROR'));
                     break;

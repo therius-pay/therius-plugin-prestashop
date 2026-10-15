@@ -37,7 +37,7 @@ Subscribe to:
 - `payment.refused`
 - `payment.refunded`
 - `payment.refund_failed`
-- `payment.cancelled`
+- `payment.canceled`
 - `payment.chargeback`
 - `payment.capture_failed`
 
