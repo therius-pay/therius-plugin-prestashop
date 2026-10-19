@@ -329,8 +329,8 @@ class Therius extends PaymentModule
         // Therius addresses a payment by its server-issued id in the URL —
         // POST /v1/payment/{id}/refund. orderCode / paymentCode are not
         // accepted for this call. The order payment's transaction_id holds the
-        // paymentCode; resolve it to the id via the keyless inquiry endpoint
-        // (which returns both).
+        // paymentCode; resolve it to the id via the (private-key authenticated)
+        // inquiry endpoint, which returns both.
         $paymentCode = '';
         $orderPaymentCollection = $order->getOrderPaymentCollection();
         if ($orderPaymentCollection->count()) {
@@ -344,7 +344,7 @@ class Therius extends PaymentModule
         $paymentId = '';
         $ich = curl_init($apiBase . '/v1/payment/inquiry/' . urlencode($paymentCode));
         curl_setopt($ich, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ich, CURLOPT_HTTPHEADER, $isTest ? ['X-Environment: sandbox'] : []);
+        curl_setopt($ich, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $priv]);
         $iresp = curl_exec($ich);
         $icode = curl_getinfo($ich, CURLINFO_HTTP_CODE);
         curl_close($ich);
